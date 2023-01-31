@@ -1,17 +1,26 @@
-import pandas as pd
+import csv
 
-# read the sales CSV file
-df = pd.read_csv("sales.csv")
+in_file = open("sales.csv", "r")
+csv_reader = csv.reader(in_file)
+headers = next(csv_reader)
 
-# add the subtotal, freight, and tax for each line
-df["GrandTotal"] = df["SubTotal"] + df["TaxAmt"] + df["Freight"]
+out_file = open("salesreport.csv", "w", newline="")
+writer = csv.writer(out_file)
+writer.writerow(["CustomerID", "GrandTotal"])
 
+old_customer_id = None
+grand_total = 0
 
-# group the data by customer and calculate the grand total for each customer
-df = df.groupby("CustomerID")["GrandTotal"].sum().reset_index()
+for row in csv_reader:
+    customer_id = row[0]
+    if old_customer_id != customer_id:
+        if old_customer_id is not None:
+            writer.writerow([old_customer_id, round(grand_total, 2)])
+        old_customer_id = customer_id
+        grand_total = 0
+    grand_total += float(row[3]) + float(row[4]) + float(row[5])
 
-# round the total to 2 decimal places
-df["GrandTotal"] = df["GrandTotal"].round(2)
+writer.writerow([old_customer_id, grand_total])
 
-# write the result to a new CSV file
-df.to_csv("sales_total.csv", index=False)
+in_file.close()
+out_file.close()
